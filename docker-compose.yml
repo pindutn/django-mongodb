@@ -1,0 +1,47 @@
+services:
+  db:
+    image: mongo
+    restart: unless-stopped
+    volumes:
+      - mongodb_data:/data/db    
+    env_file:
+      - .env.db
+    networks:
+      - net
+
+  backend:
+    build: .
+    command: runserver 0.0.0.0:8000
+    entrypoint: python3 manage.py
+    env_file:
+      - .env.db
+    expose:
+      - "8000"
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./src:/code
+    depends_on:
+      db:
+        condition: service_started
+    networks:
+      - net
+
+  mongo-express:
+    image: mongo-express
+    restart: unless-stopped
+    ports:
+      - "8081:8081"    
+    env_file:
+      - .env.db
+    depends_on:
+      db:
+        condition: service_started
+    networks:
+      - net
+
+networks:
+  net:
+
+volumes:
+  mongodb_data:
