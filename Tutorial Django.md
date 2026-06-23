@@ -381,26 +381,31 @@ class Cliente(NombreAbstract):
     numero_documento = models.BigIntegerField(
         _('numero documento'),
         help_text=_('numero de documento / CUIT'),
+        # null=True  # Comentado porque MongoDB no requiere esta opción, los campos pueden ser omitidos si no se usan.
     )
     direccion = models.CharField(
         _('dirección'),
         help_text=_('dirección del cliente'),
         max_length=200,
         blank=True,
+        # null=True    # Comentado porque MongoDB no requiere null
     )
     celular = models.BigIntegerField(
         _('Celular'),
         help_text=_('Número de celular con característica del/la administrador/a'),
         blank=True,
+        # null=True    # Comentado porque MongoDB no requiere null
     )
     telefono = models.BigIntegerField(
         _('teléfono'),
         help_text=_('teléfono fijo'),
         blank=True,
+        # null=True    # Comentado porque MongoDB no requiere null
     )
     email = models.EmailField(
         _('email'),
         help_text=_('email del cliente'),
+        # null=True,   # Comentado porque MongoDB no requiere null
         blank=True,
     )
     barrio = models.ForeignKey(
@@ -408,24 +413,27 @@ class Cliente(NombreAbstract):
         verbose_name=_('barrio'),
         help_text=_('barrio donde reside '),
         related_name='%(app_label)s_%(class)s_related',
-        on_delete=models.DO_NOTHING,
+        on_delete=models.DO_NOTHING,  # Requerido por Django, pero ignorado por MongoDB
         blank=True,
+        # null=True,  # Comentado por compatibilidad con djongo: no soporta validación NULL/NOT NULL
     )
     localidad = models.ForeignKey(
         Localidad,
         verbose_name=_('localidad'),
         help_text=_('localidad donde reside el cliente'),
         related_name='%(app_label)s_%(class)s_related',
-        on_delete=models.DO_NOTHING,
+        on_delete=models.DO_NOTHING,  # Requerido por Django, pero ignorado por MongoDB
         blank=True,
+        # null=True,  # Comentado por compatibilidad con djongo: no soporta validación NULL/NOT NULL
     )
     provincia = models.ForeignKey(
         Provincia,
         verbose_name=_('provincia'),
         help_text=_('provincia donde reside'),
         related_name='%(app_label)s_%(class)s_related',
-        on_delete=models.DO_NOTHING,
+        on_delete=models.DO_NOTHING,  # Requerido por Django, pero ignorado por MongoDB
         blank=True,
+        # null=True,  # Comentado por compatibilidad con djongo: no soporta validación NULL/NOT NULL
     )
     user = models.ForeignKey(
         User,
@@ -463,9 +471,16 @@ class Venta(models.Model):
         verbose_name=_('cliente'),
         help_text=_('cliente que realiza la compra'),
         related_name='compras',
-        on_delete=models.DO_NOTHING,
+        on_delete=models.DO_NOTHING,  # Requerido por Django, pero ignorado por MongoDB
         blank=False,
+        # null=False   # Comentado porque MongoDB no requiere null
     )
+
+    # entregado = models.BooleanField(
+    #     _('entregado'),
+    #     help_text=_('especifica si la venta ya fue entregada al cliente'),
+    #     default=False
+    # )
 
     def __str__(self):
         return '{} {}'.format(self.fecha, self.cliente.nombre)
@@ -482,8 +497,9 @@ class DetalleVenta(models.Model):
         verbose_name=_('venta'),
         help_text=_('detalle de la compra'),
         related_name='detalle',
-        on_delete=models.DO_NOTHING,
+        on_delete=models.DO_NOTHING,  # Requerido por Django, pero ignorado por MongoDB
         blank=False,
+        # null=False   # Comentado porque MongoDB no requiere null
     )
     cantidad = models.DecimalField(
         _('cantidad'),
@@ -491,6 +507,7 @@ class DetalleVenta(models.Model):
         decimal_places=2,
         help_text=_('cantidad'),
         blank=True,
+        # null=True,   # Comentado porque MongoDB no requiere null
         default=None
     )
     producto = models.ForeignKey(
@@ -498,8 +515,9 @@ class DetalleVenta(models.Model):
         verbose_name=_('producto'),
         help_text=_('producto'),
         related_name='detalle',
-        on_delete=models.DO_NOTHING,
+        on_delete=models.DO_NOTHING,  # Requerido por Django, pero ignorado por MongoDB
         blank=False,
+        # null=False   # Comentado porque MongoDB no requiere null
     )
 
 
@@ -539,13 +557,13 @@ class Receta(models.Model):
     ingrediente = models.ForeignKey(
         Ingrediente,
         related_name='recetas',
-        on_delete=models.DO_NOTHING,
+        on_delete=models.DO_NOTHING,  # Requerido por Django, pero ignorado por MongoDB
         help_text=_('Ingrediente de la receta'),
     )
     producto = models.ForeignKey(
         Producto,
         related_name='recetas',
-        on_delete=models.DO_NOTHING,
+        on_delete=models.DO_NOTHING,  # Requerido por Django, pero ignorado por MongoDB
         help_text=_('Producto de la receta'),
     )
 
@@ -567,9 +585,11 @@ Registra tus modelos para gestionarlos desde el panel de administración de Djan
 > **Puedes copiar todo este bloque y pegarlo directamente en tu archivo ./src/pastas/admin.py.**
 ```python
 from django.contrib import admin
+
+# Register your models here.
+from django.contrib import admin
 from pastas.models import *
-
-
+# Register your models here.
 admin.site.register(UnidadMedida)
 admin.site.register(Ingrediente)
 admin.site.register(Barrio)
@@ -592,7 +612,7 @@ class ProductoAdmin(admin.ModelAdmin):
         'nombre',
         'precio',
     )
-    ordering = ['nombre']
+    ordering = ['nombre']  # -nombre descendente, nombre ascendente
     search_fields = ['nombre']
     list_filter = (
         'nombre',
@@ -609,17 +629,18 @@ class ComprobanteAdmin(admin.ModelAdmin):
     save_on_top = True
     save_as = True
     list_per_page = 20
-    date_hierarchy = 'fecha'
+    #date_hierarchy = 'fecha'
     list_display = (
         'fecha',
         'cliente',
     )
+
     list_filter = (
         'cliente__nombre',
     )
+
     inlines = [
-        DetalleVentaInline,
-    ]
+        DetalleVentaInline]
 ```
 
 ---
@@ -640,20 +661,384 @@ Crea la carpeta `./src/pastas/fixtures` dentro de tu app y agrega el archivo `in
 > **Puedes copiar todo este bloque y pegarlo directamente en tu archivo initial_data.json.**
 ```json
 [
-    {
-        "model": "pastas.unidadmedida",
-        "pk": 1,
-        "fields": {
-            "nombre": "KILO"
-        }
-    },
-    {
-        "model": "pastas.unidadmedida",
-        "pk": 2,
-        "fields": {
-            "nombre": "UNIDAD"
-        }
+  {
+    "model": "pastas.unidadmedida",
+    "pk": "000000000000000000000001",
+    "fields": {
+      "nombre": "KILO"
     }
+  },
+  {
+    "model": "pastas.unidadmedida",
+    "pk": "000000000000000000000002",
+    "fields": {
+      "nombre": "UNIDAD"
+    }
+  },
+  {
+    "model": "pastas.ingrediente",
+    "pk": "000000000000000000000003",
+    "fields": {
+      "nombre": "HARINA",
+      "costo": "50.00",
+      "unidad_medida": "000000000000000000000001"
+    }
+  },
+  {
+    "model": "pastas.ingrediente",
+    "pk": "000000000000000000000004",
+    "fields": {
+      "nombre": "SAL",
+      "costo": "50.00",
+      "unidad_medida": "000000000000000000000001"
+    }
+  },
+  {
+    "model": "pastas.ingrediente",
+    "pk": "000000000000000000000005",
+    "fields": {
+      "nombre": "HUEVO",
+      "costo": "10.00",
+      "unidad_medida": "000000000000000000000002"
+    }
+  },
+  {
+    "model": "pastas.ingrediente",
+    "pk": "000000000000000000000006",
+    "fields": {
+      "nombre": "JAMÓN",
+      "costo": "600.00",
+      "unidad_medida": "000000000000000000000001"
+    }
+  },
+  {
+    "model": "pastas.ingrediente",
+    "pk": "000000000000000000000007",
+    "fields": {
+      "nombre": "QUESO",
+      "costo": "250.00",
+      "unidad_medida": "000000000000000000000001"
+    }
+  },
+  {
+    "model": "pastas.ingrediente",
+    "pk": "000000000000000000000008",
+    "fields": {
+      "nombre": "ESPINACA",
+      "costo": "100.00",
+      "unidad_medida": "000000000000000000000001"
+    }
+  },
+  {
+    "model": "pastas.producto",
+    "pk": "000000000000000000000009",
+    "fields": {
+      "nombre": "TALLARIN",
+      "ganancia": "2.00",
+      "es_relleno": false
+    }
+  },
+  {
+    "model": "pastas.producto",
+    "pk": "00000000000000000000000a",
+    "fields": {
+      "nombre": "RAVIOLI ESPINACA",
+      "ganancia": "3.00",
+      "es_relleno": true
+    }
+  },
+  {
+    "model": "pastas.producto",
+    "pk": "00000000000000000000000b",
+    "fields": {
+      "nombre": "SORRENTINO JAMÓN Y QUESO",
+      "ganancia": "3.80",
+      "es_relleno": true
+    }
+  },
+  {
+    "model": "pastas.receta",
+    "fields": {
+      "cantidad": "0.900",
+      "ingrediente": "000000000000000000000003",
+      "producto": "000000000000000000000009"
+    }
+  },
+  {
+    "model": "pastas.receta",
+    "fields": {
+      "cantidad": "0.050",
+      "ingrediente": "000000000000000000000004",
+      "producto": "000000000000000000000009"
+    }
+  },
+  {
+    "model": "pastas.receta",
+    "fields": {
+      "cantidad": "4.000",
+      "ingrediente": "000000000000000000000005",
+      "producto": "000000000000000000000009"
+    }
+  },
+  {
+    "model": "pastas.receta",
+    "fields": {
+      "cantidad": "0.600",
+      "ingrediente": "000000000000000000000003",
+      "producto": "00000000000000000000000a"
+    }
+  },
+  {
+    "model": "pastas.receta",
+    "fields": {
+      "cantidad": "4.000",
+      "ingrediente": "000000000000000000000005",
+      "producto": "00000000000000000000000a"
+    }
+  },
+  {
+    "model": "pastas.receta",
+    "fields": {
+      "cantidad": "0.300",
+      "ingrediente": "000000000000000000000008",
+      "producto": "00000000000000000000000a"
+    }
+  },
+  {
+    "model": "pastas.receta",
+    "fields": {
+      "cantidad": "0.600",
+      "ingrediente": "000000000000000000000003",
+      "producto": "00000000000000000000000b"
+    }
+  },
+  {
+    "model": "pastas.receta",
+    "fields": {
+      "cantidad": "4.000",
+      "ingrediente": "000000000000000000000005",
+      "producto": "00000000000000000000000b"
+    }
+  },
+  {
+    "model": "pastas.receta",
+    "fields": {
+      "cantidad": "0.150",
+      "ingrediente": "000000000000000000000006",
+      "producto": "00000000000000000000000b"
+    }
+  },
+  {
+    "model": "pastas.receta",
+    "fields": {
+      "cantidad": "0.150",
+      "ingrediente": "000000000000000000000007",
+      "producto": "00000000000000000000000b"
+    }
+  },
+  {
+    "model": "pastas.provincia",
+    "pk": "00000000000000000000000c",
+    "fields": {
+      "nombre": "CÓRDOBA"
+    }
+  },
+  {
+    "model": "pastas.provincia",
+    "pk": "00000000000000000000000d",
+    "fields": {
+      "nombre": "SANTA FE"
+    }
+  },
+  {
+    "model": "pastas.provincia",
+    "pk": "00000000000000000000000e",
+    "fields": {
+      "nombre": "BUENOS AIRES"
+    }
+  },
+  {
+    "model": "pastas.localidad",
+    "pk": "00000000000000000000000f",
+    "fields": {
+      "nombre": "RÍO CUARTO"
+    }
+  },
+  {
+    "model": "pastas.localidad",
+    "pk": "000000000000000000000010",
+    "fields": {
+      "nombre": "VILLA MARÍA"
+    }
+  },
+  {
+    "model": "pastas.localidad",
+    "pk": "000000000000000000000011",
+    "fields": {
+      "nombre": "ROSARIO"
+    }
+  },
+  {
+    "model": "pastas.barrio",
+    "pk": "000000000000000000000012",
+    "fields": {
+      "nombre": "CENTRO"
+    }
+  },
+  {
+    "model": "pastas.barrio",
+    "pk": "000000000000000000000013",
+    "fields": {
+      "nombre": "LAMADRID"
+    }
+  },
+  {
+    "model": "pastas.barrio",
+    "pk": "000000000000000000000014",
+    "fields": {
+      "nombre": "AMEGHINO"
+    }
+  },
+  {
+    "model": "pastas.barrio",
+    "pk": "000000000000000000000015",
+    "fields": {
+      "nombre": "ALBERDI"
+    }
+  },
+  {
+    "model": "pastas.cliente",
+    "pk": "000000000000000000000016",
+    "fields": {
+      "nombre": "JUAN PÉREZ",
+      "numero_documento": 20123456789,
+      "direccion": "Av. Sabattini 350",
+      "celular": 3584123456,
+      "telefono": 3584987654,
+      "email": "juan@mail.com",
+      "barrio": "000000000000000000000012",
+      "localidad": "00000000000000000000000f",
+      "provincia": "00000000000000000000000c"
+    }
+  },
+  {
+    "model": "pastas.cliente",
+    "pk": "000000000000000000000017",
+    "fields": {
+      "nombre": "MARÍA GARCÍA",
+      "numero_documento": 27111222333,
+      "direccion": "San Martín 200",
+      "celular": 3584555666,
+      "telefono": 0,
+      "email": "maria@mail.com",
+      "barrio": "000000000000000000000013",
+      "localidad": "00000000000000000000000f",
+      "provincia": "00000000000000000000000c"
+    }
+  },
+  {
+    "model": "pastas.cliente",
+    "pk": "000000000000000000000018",
+    "fields": {
+      "nombre": "CARLOS LÓPEZ",
+      "numero_documento": 20333444555,
+      "direccion": "Belgrano 800",
+      "celular": 3584777888,
+      "telefono": 0,
+      "email": "carlos@mail.com",
+      "barrio": "000000000000000000000015",
+      "localidad": "000000000000000000000010",
+      "provincia": "00000000000000000000000c"
+    }
+  },
+  {
+    "model": "pastas.venta",
+    "pk": "000000000000000000000019",
+    "fields": {
+      "fecha": "2026-06-06",
+      "cliente": "000000000000000000000016"
+    }
+  },
+  {
+    "model": "pastas.venta",
+    "pk": "00000000000000000000001a",
+    "fields": {
+      "fecha": "2026-06-07",
+      "cliente": "000000000000000000000016"
+    }
+  },
+  {
+    "model": "pastas.venta",
+    "pk": "00000000000000000000001b",
+    "fields": {
+      "fecha": "2026-06-08",
+      "cliente": "000000000000000000000017"
+    }
+  },
+  {
+    "model": "pastas.venta",
+    "pk": "00000000000000000000001c",
+    "fields": {
+      "fecha": "2026-06-09",
+      "cliente": "000000000000000000000018"
+    }
+  },
+  {
+    "model": "pastas.detalleventa",
+    "fields": {
+      "venta": "000000000000000000000019",
+      "cantidad": "1.00",
+      "producto": "000000000000000000000009"
+    }
+  },
+  {
+    "model": "pastas.detalleventa",
+    "fields": {
+      "venta": "000000000000000000000019",
+      "cantidad": "2.00",
+      "producto": "00000000000000000000000b"
+    }
+  },
+  {
+    "model": "pastas.detalleventa",
+    "fields": {
+      "venta": "00000000000000000000001a",
+      "cantidad": "3.00",
+      "producto": "00000000000000000000000a"
+    }
+  },
+  {
+    "model": "pastas.detalleventa",
+    "fields": {
+      "venta": "00000000000000000000001b",
+      "cantidad": "1.50",
+      "producto": "000000000000000000000009"
+    }
+  },
+  {
+    "model": "pastas.detalleventa",
+    "fields": {
+      "venta": "00000000000000000000001b",
+      "cantidad": "1.00",
+      "producto": "00000000000000000000000a"
+    }
+  },
+  {
+    "model": "pastas.detalleventa",
+    "fields": {
+      "venta": "00000000000000000000001c",
+      "cantidad": "2.00",
+      "producto": "00000000000000000000000b"
+    }
+  },
+  {
+    "model": "pastas.detalleventa",
+    "fields": {
+      "venta": "00000000000000000000001c",
+      "cantidad": "1.00",
+      "producto": "000000000000000000000009"
+    }
+  }
 ]
 ```
 > **Puedes copiar todo este bloque y pegarlo directamente en tu terminal.**
