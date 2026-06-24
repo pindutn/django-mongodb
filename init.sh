@@ -22,7 +22,20 @@ warn()  { printf '%b\n' "${YELLOW}  ⚠${NC} $*"; }
 step()  { printf '%b\n' "\n${BOLD}${BLUE}━━━ $* ━━━${NC}"; }
 err()   { printf '%b\n' "${RED}  ✘${NC} $*"; }
 
-COMPOSE_PROJECT="fabrica"
+# ──────────────────────────────────────────────
+# Variables de entorno
+# ──────────────────────────────────────────────
+ENV_FILE="$(dirname "$0")/.env.db"
+if [ -f "$ENV_FILE" ]; then
+  set -a
+  source "$ENV_FILE"
+  set +a
+else
+  err "Archivo $ENV_FILE no encontrado"
+  exit 1
+fi
+
+COMPOSE_PROJECT="${COMPOSE_PROJECT:-fabrica}"
 
 printf '%b\n' ""
 printf '%b\n' "${BOLD}${MAGENTA}  ╔══════════════════════════════════════════╗${NC}"
@@ -73,9 +86,13 @@ step "Aplicando migraciones"
 docker compose -p "$COMPOSE_PROJECT" exec -T backend python manage.py migrate --skip-checks
 ok "Migraciones aplicadas"
 
+SU_USER="${SU_USER:-admin}"
+SU_EMAIL="${SU_EMAIL:-admin@example.com}"
+SU_PASSWORD="${SU_PASSWORD:-admin}"
+
 step "Creando superusuario"
 if docker compose -p "$COMPOSE_PROJECT" exec -T backend python manage.py createsuperuser \
-  --noinput --username admin --email admin@example.com 2>/dev/null; then
+  --noinput --username "$SU_USER" --email "$SU_EMAIL" 2>/dev/null; then
   ok "Superusuario creado"
 else
   warn "El superusuario ya existía"
@@ -86,11 +103,11 @@ docker compose -p "$COMPOSE_PROJECT" exec -T backend python manage.py shell -c "
 from django.contrib.auth import get_user_model
 User = get_user_model()
 try:
-    u = User.objects.get(username='admin')
-    u.set_password('admin')
+    u = User.objects.get(username='$SU_USER')
+    u.set_password('$SU_PASSWORD')
     u.save()
 except User.DoesNotExist:
-    print('admin no encontrado')
+    print('usuario no encontrado')
 "
 ok "Contraseña configurada"
 
@@ -108,7 +125,7 @@ printf '%b\n' "${GREEN}${BOLD}  │  ✅  Proyecto listo$(printf '%*s' 31 '')│
 printf '%b\n' "${GREEN}${BOLD}  ├${box_border}┤${NC}"
 printf '%b\n' "${GREEN}${BOLD}  │  ${NC}${CYAN}Admin:${NC}        ${WHITE}http://localhost:8000/admin/${NC}${GREEN}       │${NC}"
 printf '%b\n' "${GREEN}${BOLD}  │  ${NC}${CYAN}MongoExpress:${NC}  ${WHITE}http://localhost:8081/${NC}${GREEN}            │${NC}"
-printf '%b\n' "${GREEN}${BOLD}  │  ${NC}${CYAN}Usuario:${NC}      ${WHITE}admin${NC}${GREEN}                              │${NC}"
-printf '%b\n' "${GREEN}${BOLD}  │  ${NC}${CYAN}Contraseña:${NC}   ${WHITE}admin${NC}${GREEN}                                 │${NC}"
+printf '%b\n' "${GREEN}${BOLD}  │  ${NC}${CYAN}Usuario:${NC}      ${WHITE}${SU_USER}${NC}${GREEN}                              │${NC}"
+printf '%b\n' "${GREEN}${BOLD}  │  ${NC}${CYAN}Contraseña:${NC}   ${WHITE}${SU_PASSWORD}${NC}${GREEN}                                 │${NC}"
 printf '%b\n' "${GREEN}${BOLD}  └${box_border}┘${NC}"
 printf '%b\n' ""
